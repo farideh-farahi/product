@@ -1,0 +1,6 @@
+# Ignore the node_modules folder (dependencies)
+node_modules/
+
+# Ignore environment variables (security reasons)
+.env
+
