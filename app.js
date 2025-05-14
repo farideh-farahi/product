@@ -3,23 +3,24 @@ var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 
-// var indexRouter = require('./routes/index');
-//var authRouter = require('./routes/auth');
-var categoryRouter = require('./routes/categoryRoutes');
-var subCategoryRouter = require('./routes/subCategoryRoutes');
+var categoryRoutes = require('./routes/categoryRouters');
+var subCategoryRoutes = require('./routes/subCategoryRouters');
+var brandRoutes = require('./routes/brandRouters');
+var imageRoutes = require('./routes/imageRouters');
+var productRoutes = require('./routes/productRouters');
 
 
 var app = express();
-
 app.use(logger('dev'));
 app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// app.use('/', indexRouter);
-//app.use('/api/v0/auth', authRouter);
-app.use('/api/v0/cat', categoryRouter);
-app.use('/api/v0/subcat', subCategoryRouter);
+app.use('/api/v0/category', categoryRoutes);
+app.use('/api/v0/subcat', subCategoryRoutes);
+app.use('/api/v0/brand', brandRoutes);
+app.use('/api/v0/image', imageRoutes);
+app.use('/api/v0/product', productRoutes);
 
 module.exports = app;

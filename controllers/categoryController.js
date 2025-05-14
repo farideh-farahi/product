@@ -80,4 +80,8 @@ const updateCategory = async (req, res) => {
     }
  }
 
-module.exports = {createCategory, getAllCategories, updateCategory, deleteCategory}
+module.exports = {
+    createCategory, 
+    getAllCategories, 
+    updateCategory, 
+    deleteCategory}
