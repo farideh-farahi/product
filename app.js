@@ -3,6 +3,8 @@ var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 
+
+
 var categoryRoutes = require('./routes/categoryRouters');
 var subCategoryRoutes = require('./routes/subCategoryRouters');
 var brandRoutes = require('./routes/brandRouters');
@@ -14,8 +16,12 @@ var app = express();
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+const multer = require("multer");
+
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+app.use("/uploads", express.static("uploads"));
+
 
 app.use('/api/v0/category', categoryRoutes);
 app.use('/api/v0/subcat', subCategoryRoutes);

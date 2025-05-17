@@ -1,15 +1,18 @@
-const { Product, Brand, Category, Subcategory} = require("../models");
+const { Product, Brand, Category, Subcategory, ProductSubcategory} = require("../models");
 
 const createProduct = async (req, res) => {
+    console.log("Headers:", req.headers);
+    console.log("File:", req.file);
+    console.log("Body:", req.body);
+
     const { name, brandId, price, categoryId, subcategoryIds, status } = req.body;
 
-    // Validate required fields
     if (!name || !brandId || !price || !categoryId || !subcategoryIds || !status) {
         return res.status(400).json({ success: false, msg: "Missing required fields!" });
     }
 
     try {
-        // Validate brand, category, and subcategories
+
         const brand = await Brand.findByPk(brandId);
         if (!brand) return res.status(404).json({ success: false, msg: "Brand not found!" });
 
@@ -25,23 +28,15 @@ const createProduct = async (req, res) => {
             if (!subcategory) return res.status(404).json({ success: false, msg: `Subcategory ${subcategoryId} not found!` });
         }
 
-        // 🔹 Handle cover image upload from Postman
-        const coverPath = req.file ? req.file.path : null;
-        if (!coverPath) {
-            return res.status(400).json({ success: false, msg: "Cover image is required!" });
-        }
-
-        // 🔹 Create the product including the uploaded cover image
         const newProduct = await Product.create({
             name,
             brandId,
             price,
             categoryId,
+            subcategoryIds,
             status,
-            cover: coverPath // ✅ Assign uploaded file path
         });
 
-        // 🔹 Associate product with subcategories
         await ProductSubcategory.bulkCreate(
             subcategoryIds.map(subcategoryId => ({
                 productId: newProduct.id,
@@ -56,14 +51,32 @@ const createProduct = async (req, res) => {
     }
 };
 const getAllProducts = async (req, res) => {
+    const { isCat, isSub } = req.query
+    const includeOptions = [
+        {
+            model: Brand, 
+            attributes: ["id", "name"],
+        },
+      ];
+  
+      if (isCat=== "true"){
+        includeOptions.push({
+          model: Category,
+          attributes: ["id","name"]
+        })
+      }      
+      if (isSub=== "true"){
+        includeOptions.push({
+          model: Subcategory,
+          attributes: ["id","name"]
+        })
+      }
+      
     try {
         const products = await Product.findAll({
             where: { status: 1 },
-            include: [
-                { model: Brand, attributes: ["id", "name"] },
-                { model: Category, attributes: ["id", "name"] },
-                { model: Subcategory, attributes: ["id", "name"] }
-            ]
+            attributes: ["id", "name","price", "cover"],
+            include: includeOptions
         });
 
         return res.status(200).json({ success: true, products });
@@ -74,7 +87,7 @@ const getAllProducts = async (req, res) => {
 
 const updateProduct = async (req, res) => {
     const { id } = req.params;
-    const { name, brandId, price, categoryId, subcategory, status } = req.body;
+    const { name, brandId, price, categoryId, subcategoryIds, status } = req.body;
 
     try {
         const product = await Product.findByPk(id);
@@ -103,9 +116,17 @@ const updateProduct = async (req, res) => {
               }
             }
           }
-          
+        
+          for (const subcategoryId of subcategoryIds) {
+            const subcategory = await Subcategory.findByPk(subcategoryId);
+            if (!subcategory) {
+                return res.status(404).json({ success: false, msg: `Subcategory ${subcategoryId} not found!` });
+            }
+        }
+        await product.setSubcategories(subcategoryIds);
+  
 
-        await product.update({ name, brandId, price, categoryId,subcategory, status });
+        await product.update({ name, brandId, price, categoryId,subcategoryIds, status });
         return res.json({ success: true, msg: "Product updated successfully!", product });
     } catch (err) {
         return res.status(500).json({ success: false, msg: "Server error while updating product", error: err.message });
