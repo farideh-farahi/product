@@ -5,12 +5,15 @@ const {createBrand,
     deleteBrand} = 
     require("../controllers/brandController");
 
+const validateToken = require ("../middlewares/tokenValidation")
+
+
 const router = express.Router();
 
 //CRUD Routes for Brand
-router.post("/", createBrand);
-router.get("/", getAllBrands);
-router.put("/:id", updateBrand);
-router.delete("/:id", deleteBrand);
+router.post("/",validateToken, createBrand);
+router.get("/",validateToken, getAllBrands);
+router.put("/:id",validateToken, updateBrand);
+router.delete("/:id",validateToken, deleteBrand);
 
 module.exports = router;

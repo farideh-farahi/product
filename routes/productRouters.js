@@ -5,13 +5,15 @@ const {
     updateProduct,
     deleteProduct,
 } = require ("../controllers/productController")
+const validateToken = require ("../middlewares/tokenValidation")
+
 const router = express.Router();
 
 
-router.post("/", createProduct);
-router.get("/", getAllProducts);
-router.put("/:id", updateProduct);
-router.delete("/:id", deleteProduct);
+router.post("/",validateToken, createProduct);
+router.get("/",validateToken, getAllProducts);
+router.put("/:id",validateToken, updateProduct);
+router.delete("/:id",validateToken, deleteProduct);
 
 
 

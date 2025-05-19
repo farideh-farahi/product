@@ -4,11 +4,14 @@ const {createCategory,
     updateCategory, 
     deleteCategory} = 
     require("../controllers/categoryController");
+
+const validateToken = require("../middlewares/tokenValidation")
+
 const router = express.Router();
 
-router.post("/", createCategory);
-router.get("/", getAllCategories);
-router.put("/:id", updateCategory);
-router.delete("/:id", deleteCategory);
+router.post("/", validateToken, createCategory);
+router.get("/",validateToken, getAllCategories);
+router.put("/:id",validateToken, updateCategory);
+router.delete("/:id",validateToken, deleteCategory);
 
 module.exports = router;

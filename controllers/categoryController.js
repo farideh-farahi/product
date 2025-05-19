@@ -6,6 +6,11 @@ const createCategory = async (req, res) => {
         return res.status(400).json({ success: false, msg: "Invalid or missing required fields!" });
      }
      try {
+        const existingCategory = await Category.findOne({ where: { name } });
+        if (existingCategory) {
+            return res.status(409).json({ success: false, msg: "Category name already exists!" });
+        }
+
         const newCategory = await Category.create({ name, description, is_active });
         res.status(201).json({ success: true, msg: "Category created successfully!", category: newCategory });
     } catch (err) {

@@ -6,6 +6,11 @@ const createBrand = async (req, res) => {
         return res.status(400).json({ success: false, msg: "Invalid or missing required fields!" });
      }
      try {
+        const existingBrand = await Brand.findOne({ where: { name } });
+        if (existingBrand) {
+            return res.status(409).json({ success: false, msg: "Brand name already exists!" });
+        }
+
         const newBrand = await Brand.create({ name });
         return res.status(201).json({ success: true, msg: "Brand created successfully!", brand: newBrand });
     } catch (err) {
