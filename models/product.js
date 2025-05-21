@@ -41,6 +41,14 @@ module.exports = (sequelize, DataTypes) => {
     type: DataTypes.INTEGER,
     allowNull: false,
   },
+  gallery: {
+        type: DataTypes.INTEGER,
+    references: {
+      model: 'Gallery',
+      key: 'id',
+    },
+    onDelete: "CASCADE",
+  },
 
    categoryId: {
     type: DataTypes.INTEGER,
