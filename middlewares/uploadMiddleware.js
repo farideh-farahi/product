@@ -29,11 +29,9 @@ const convertToWebP = async (req, res, next) => {
 
         await sharp(inputPath).toFormat("webp").toFile(outputPath);
 
-        // Replace the file path with WebP format
         file.path = outputPath;
         file.filename = path.basename(outputPath);
 
-        // Remove the original file
         fs.unlinkSync(inputPath);
       })
     );
