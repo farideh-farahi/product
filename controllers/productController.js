@@ -1,4 +1,4 @@
-const { Product, Brand, Category, Subcategory, ProductSubcategory} = require("../models");
+const { Product, Brand, Category, Subcategory, ProductSubcategory, Gallery } = require("../models");
 
 const createProduct = async (req, res) => {
     console.log("Headers:", req.headers);
@@ -56,7 +56,10 @@ const getAllProducts = async (req, res) => {
         {
             model: Brand, 
             attributes: ["id", "name"],
-        },
+        },{
+            model: Gallery,
+            attributes: ["imageUrl"]
+        }
       ];
   
       if (isCat=== "true"){

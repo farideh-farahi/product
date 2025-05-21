@@ -5,7 +5,7 @@ const {
 module.exports = (sequelize, DataTypes) => {
   class FileImage extends Model {
     static associate(models) {
-      FileImage.belongsTo(models.User,{foreignKey:"UserId", onDelete:"CASCADE"})
+      FileImage.belongsTo(models.User,{foreignKey:"userId", onDelete:"CASCADE"})
     }
   }
   FileImage.init({

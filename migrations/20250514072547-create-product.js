@@ -44,6 +44,15 @@ module.exports = {
       attributes:{
         type: Sequelize.STRING,
        },
+       gallery: {
+        type: Sequelize.INTEGER,
+        references: {
+          model: "Gallery",
+          key: "id",
+        },
+        onDelete: "CASCADE",
+      },
+
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE

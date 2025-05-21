@@ -4,3 +4,4 @@ node_modules/
 # Ignore environment variables (security reasons)
 .env
 
+uploads/
