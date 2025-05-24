@@ -8,15 +8,9 @@ const validateToken = require("../middlewares/tokenValidation");
 const { upload, convertToWebP } = require("../middlewares/uploadMiddleware");
 
 
-router.post("/cover/:productId", validateToken, upload.single("cover"), convertToWebP, async (req, res) => {
+router.post("/cover", validateToken, upload.single("cover"), convertToWebP, async (req, res) => {
   try {
-    const { productId } = req.params;
-    const userId = req.user.id;
-
-    const product = await Product.findByPk(productId);
-    if (!product) {
-      return res.status(404).json({ success: false, msg: "Product not found!" });
-    }
+    const userId = req.user?.user_id;
 
     if (!req.file) {
       return res.status(400).json({ success: false, msg: "No file uploaded!" });
@@ -27,33 +21,31 @@ router.post("/cover/:productId", validateToken, upload.single("cover"), convertT
       return res.status(400).json({ success: false, msg: "The maximum size you can upload is 500 KB." });
     }
 
-    if (product.cover) {
-      return res.status(400).json({ success: false, msg: "This product already has a cover! Use the update route instead." });
-    }
+    const originalPath = `uploads/${Date.now()}-original.webp`;
+    const tinyPath = `uploads/${Date.now()}-tiny.webp`;
 
-    const originalPath = `uploads/${Date.now()}-${productId}-original.webp`;
-    const tinyPath = `uploads/${Date.now()}-${productId}-tiny.webp`;
 
-    // ✅ Save original image
     fs.renameSync(req.file.path, originalPath);
 
-    // ✅ Generate tiny version (e.g., width: 100px)
+
     await sharp(originalPath)
       .resize({ width: 100 })
       .webp({ quality: 80 })
       .toFile(tinyPath);
 
-    // ✅ Update product cover to the resized version
-    await product.update({ cover: path.basename(tinyPath) });
+
+    const fileImage = await FileImage.create({
+      userId,
+      outputPath: path.basename(originalPath)
+    });
 
     return res.status(201).json({
       success: true,
       msg: "Cover image uploaded and resized successfully!",
-      productId,
+      fileImageId: fileImage.id,
       userId,
       originalImagePath: path.basename(originalPath),
       tinyImagePath: path.basename(tinyPath),
-      fileSize: `${(fileSize / 1024).toFixed(2)} KB`
     });
 
   } catch (error) {
@@ -62,38 +54,36 @@ router.post("/cover/:productId", validateToken, upload.single("cover"), convertT
   }
 });
 
-router.put("/cover/:productId", validateToken, upload.single("cover"), convertToWebP, async (req, res) => {
+router.put("/cover/:id", validateToken, upload.single("cover"), convertToWebP, async (req, res) => {
   try {
-    const { productId } = req.params;
-    const userId = req.user.id;
-
-    const product = await Product.findByPk(productId);
-    if (!product) return res.status(404).json({ success: false, msg: "Product not found!" });
+    const { id } = req.params;
+    const userId = req.user?.user_id;
 
     if (!req.file) return res.status(400).json({ success: false, msg: "No file uploaded!" });
 
-    // ✅ Check if a cover exists
-    if (!product.cover) {
-      return res.status(400).json({ success: false, msg: "This product does not have a cover yet! Use the create route instead." });
-    }
+    const fileImage = await FileImage.findByPk(id);
+    if (!fileImage) return res.status(404).json({ success: false, msg: "Cover image not found!" });
 
     // ✅ Delete old cover
-    const oldCoverPath = path.join("uploads", product.cover);
+    const oldCoverPath = path.join("uploads", fileImage.outputPath);
     if (fs.existsSync(oldCoverPath)) {
       fs.unlinkSync(oldCoverPath);
     }
 
     // ✅ Save new cover image
-    const newCoverPath = `uploads/${Date.now()}-${productId}-cover.webp`;
+    const newCoverPath = `uploads/${Date.now()}-cover.webp`;
     fs.renameSync(req.file.path, newCoverPath);
 
     // ✅ Update cover image in DB
-    await product.update({ cover: path.basename(newCoverPath) });
+      await FileImage.update(
+      { outputPath: path.basename(newCoverPath) },
+      { where: { id } }
+    );
 
     return res.status(200).json({
       success: true,
       msg: "Cover image updated successfully!",
-      productId,
+      fileImageId: id,
       userId,
       coverImagePath: path.basename(newCoverPath)
     });
@@ -104,21 +94,18 @@ router.put("/cover/:productId", validateToken, upload.single("cover"), convertTo
   }
 });
 
-router.delete("/cover/:productId", validateToken, async (req, res) => {
+router.delete("/cover/:id", validateToken, async (req, res) => {
   try {
-    const { productId } = req.params;
+    const { id } = req.params;
+    const fileImage = await FileImage.findByPk(id);
+    if (!fileImage) return res.status(404).json({ success: false, msg: "Cover image not found!" });
 
-    const product = await Product.findByPk(productId);
-    if (!product) return res.status(404).json({ success: false, msg: "Product not found!" });
-
-    if (!product.cover) return res.status(400).json({ success: false, msg: "No cover image to delete!" });
-
-    const coverPath = path.join("uploads", product.cover);
+    const coverPath = path.join("uploads", fileImage.outputPath);
     if (fs.existsSync(coverPath)) {
       fs.unlinkSync(coverPath);
     }
 
-    await product.update({ cover: null });
+    await fileImage.destroy();
 
     return res.status(200).json({ success: true, msg: "Cover image deleted successfully!" });
 

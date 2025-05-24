@@ -3,11 +3,14 @@ const {
   Model
 } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
-  class FileImage extends Model {
-    static associate(models) {
-      FileImage.belongsTo(models.User,{foreignKey:"userId", onDelete:"CASCADE"})
-    }
+class FileImage extends Model {
+  static associate(models) {
+    FileImage.belongsTo(models.User, { foreignKey: "userId", onDelete: "CASCADE" });
+    FileImage.belongsTo(models.Product, {foreignKey: "productId",as: "Product"});
+
   }
+}
+
   FileImage.init({
     userId: { type: DataTypes.INTEGER, allowNull: false },
     outputPath: DataTypes.JSON

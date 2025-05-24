@@ -12,7 +12,7 @@ const storage = multer.diskStorage({
     cb(null, uploadPath);
   },
   filename: function (req, file, cb) {
-    cb(null, Date.now() + path.extname(file.originalname));
+    cb(null, `${Date.now()}-${Math.random().toString(36).substring(7)}${path.extname(file.originalname)}`);
   },
 });
 
@@ -25,14 +25,17 @@ const convertToWebP = async (req, res, next) => {
     await Promise.all(
       req.files.map(async (file) => {
         const inputPath = file.path;
-        const outputPath = `uploads/${Date.now()}.webp`;
+        const outputPath = `uploads/${Date.now()}-${Math.random().toString(36).substring(7)}.webp`;
 
         await sharp(inputPath).toFormat("webp").toFile(outputPath);
 
         file.path = outputPath;
         file.filename = path.basename(outputPath);
 
-        fs.unlinkSync(inputPath);
+        // ✅ Use asynchronous `fs.unlink()` to prevent locking issues
+        fs.unlink(inputPath, (err) => {
+          if (err) console.error("Error deleting original file:", err);
+        });
       })
     );
   } catch (error) {
@@ -42,6 +45,5 @@ const convertToWebP = async (req, res, next) => {
 
   next();
 };
-
 
 module.exports = { upload, convertToWebP };

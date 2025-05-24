@@ -1,75 +1,78 @@
-const path = require('path');
-const fs = require('fs');
-const { Gallery, Product } = require('../models');
+const path = require("path");
+const fs = require("fs");
+const { Gallery, FileImage } = require("../models");
 const { convertToWebP } = require("../middlewares/uploadMiddleware");
 
 const createImage = async (req, res) => {
   try {
-    const { productId } = req.body;
-    const product = await Product.findByPk(productId);
-    if (!product) return res.status(404).json({ message: "Product not found" });
+    const { userId } = req.body;
 
     if (!req.files || req.files.length === 0) {
-      return res.status(400).json({ message: "No files uploaded" });
+      return res.status(400).json({ message: "No files uploaded!" });
     }
 
-    await convertToWebP(req, res, async () => {
-      const images = req.files.map(file => ({
-        imageUrl: file.filename,
-        productId,
-      }));
+    // ✅ First, save images in FileImage
+    const fileImages = await Promise.all(
+      req.files.map(async (file) => {
+        const savedFileImage = await FileImage.create({
+          userId,
+          outputPath: file.filename
+        });
+        return savedFileImage;
+      })
+    );
+    const fileImageIdsString = fileImages.map(image => image.id).join(",");
 
-      const savedImages = await Gallery.bulkCreate(images);
-      res.status(201).json(savedImages);
+    return res.status(201).json({
+        success: true,
+        message: "Images uploaded successfully!",
+        galleryIds: fileImageIdsString,
     });
 
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
 
-const getAllImagesByProduct = async (req, res) => {
-  try {
-    const { productId } = req.params;
-    const product = await Product.findByPk(productId);
-    if (!product) return res.status(404).json({ message: 'Product not found' });
-
-    const images = await Gallery.findAll({ where: { productId } });
-    res.status(200).json(images);
   } catch (error) {
+    console.error("Error creating image:", error);
     res.status(500).json({ error: error.message });
   }
 };
 
 const getImageById = async (req, res) => {
   try {
-    const image = await Gallery.findByPk(req.params.id);
-    if (!image) return res.status(404).json({ message: 'Image not found' });
+    const image = await FileImage.findByPk(req.params.id); // ✅ Fetch from FileImage instead of Gallery
+    if (!image) return res.status(404).json({ message: "Image not found!" });
 
-    res.status(200).json(image);
+    res.status(200).json({
+      success: true,
+      fileImageId: image.id, // ✅ Return FileImage ID
+      outputPath: image.outputPath,
+    });
+
   } catch (error) {
+    console.error("Error retrieving image:", error);
     res.status(500).json({ error: error.message });
   }
 };
 
 const replaceImage = async (req, res) => {
   try {
-    const image = await Gallery.findByPk(req.params.id);
-    if (!image) return res.status(404).json({ message: 'Image not found' });
+    const fileImage = await FileImage.findByPk(req.params.id);
+    if (!fileImage) return res.status(404).json({ message: "Image not found!" });
 
-    if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
+    if (!req.file) return res.status(400).json({ message: "No file uploaded!" });
 
-    const oldImagePath = path.join("uploads", image.imageUrl);
+    const oldImagePath = path.join("uploads", fileImage.outputPath);
     if (fs.existsSync(oldImagePath)) fs.unlinkSync(oldImagePath);
 
     await convertToWebP(req, res, async () => {
       const newImagePath = req.file.filename;
 
-      await image.update({ imageUrl: newImagePath });
+      await fileImage.update({ outputPath: newImagePath });
 
       res.status(200).json({
-        message: 'Image replaced successfully',
-        newImageUrl: newImagePath,
+        success: true,
+        message: "Image replaced successfully!",
+        fileImageId: fileImage.id,
+        newOutputPath: newImagePath,
       });
     });
 
@@ -81,18 +84,19 @@ const replaceImage = async (req, res) => {
 
 const deleteImage = async (req, res) => {
   try {
-    const { id } = req.params;
-    const image = await Gallery.findByPk(id);
-    if (!image) return res.status(404).json({ message: 'Image not found' });
+    const fileImage = await FileImage.findByPk(req.params.id); // ✅ Fetch from FileImage
+    if (!fileImage) return res.status(404).json({ message: "Image not found!" });
 
-    const imagePath = path.join("uploads", image.imageUrl);
+    const imagePath = path.join("uploads", fileImage.outputPath);
     if (fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
 
-    await image.destroy();
-    res.status(200).json({ message: 'Image deleted successfully' });
+    await fileImage.destroy();
+    res.status(200).json({ success: true, message: "Image deleted successfully!" });
+
   } catch (error) {
+    console.error("Error deleting image:", error);
     res.status(500).json({ error: error.message });
   }
 };
 
-module.exports = { createImage, getAllImagesByProduct, getImageById,replaceImage, deleteImage };
+module.exports = { createImage, getImageById, replaceImage, deleteImage };
