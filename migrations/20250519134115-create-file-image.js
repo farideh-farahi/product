@@ -10,10 +10,10 @@ module.exports = {
         type: Sequelize.INTEGER
       },
       userId: {
-        type: Sequelize.STRING
+        type: Sequelize.INTEGER
       },
       outputPath: {
-        type: Sequelize.JSON
+        type: Sequelize.JSONB
       },
       createdAt: {
         allowNull: false,

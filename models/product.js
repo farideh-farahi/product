@@ -7,8 +7,6 @@ module.exports = (sequelize, DataTypes) => {
       this.belongsTo(models.Category, { foreignKey: "categoryId", onDelete: "CASCADE" });
       this.belongsTo(models.Brand, { foreignKey: "brandId", onDelete: "CASCADE" });
       this.belongsTo(models.FileImage, { foreignKey: "cover", as: "CoverImage", onDelete: "SET NULL" });
-      this.hasMany(models.FileImage, {foreignKey: "productId", as: "GalleryImages"});
-
       this.belongsToMany(models.Subcategory, {
         through: "ProductSubcategories",
         foreignKey: "productId"
@@ -44,7 +42,12 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
       },
       gallery: {
-        type: DataTypes.ARRAY(DataTypes.INTEGER),
+        type: DataTypes.INTEGER,
+        references: {
+          model: "FileImages", 
+          key: "id",
+        },
+        onDelete: "CASCADE",
         allowNull: true,
       },
       categoryId: {
@@ -55,6 +58,11 @@ module.exports = (sequelize, DataTypes) => {
         },
         onDelete: "CASCADE",
       },
+      subcategoryIds: {
+        type: DataTypes.ARRAY(DataTypes.INTEGER),
+        allowNull: true,
+      },
+
       attributes: {
         type: DataTypes.JSON,
         allowNull: true,

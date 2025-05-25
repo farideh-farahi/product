@@ -6,19 +6,18 @@ module.exports = (sequelize, DataTypes) => {
 class FileImage extends Model {
   static associate(models) {
     FileImage.belongsTo(models.User, { foreignKey: "userId", onDelete: "CASCADE" });
-    FileImage.belongsTo(models.Product, {foreignKey: "productId",as: "Product"});
-
   }
 }
 
-  FileImage.init({
+FileImage.init({
     userId: { type: DataTypes.INTEGER, allowNull: false },
-    outputPath: DataTypes.JSON
-  }, {
+    outputPath: DataTypes.JSONB,
+}, {
     sequelize,
     modelName: 'FileImage',
-    timestamps: true,
-  });
+    timestamps: true
+});
+
 
   return FileImage;
 };

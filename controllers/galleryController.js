@@ -1,102 +1,206 @@
-const path = require("path");
 const fs = require("fs");
 const { Gallery, FileImage } = require("../models");
-const { convertToWebP } = require("../middlewares/uploadMiddleware");
 
-const createImage = async (req, res) => {
+//gallery 
+const createGallery = async (req, res) => {
   try {
-    const { userId } = req.body;
 
-    if (!req.files || req.files.length === 0) {
-      return res.status(400).json({ message: "No files uploaded!" });
+    const userId = req.user?.user_id;
+
+    if (!req.file || req.file.length === 0) {
+      return res.status(400).json({ message: "No file uploaded!" });
+    }
+    const webpImages = req.file.map(file => file.filename)
+    const fileImage = await FileImage.create({
+      userId,
+      outputPath: { images: webpImages }
+    });
+
+    const galleryEntries = await Promise.all(
+          webpImages.map(async imagePath => {
+            const gallery = await Gallery.create({ imageUrl: imagePath });
+            return { id: gallery.id, imageUrl: imagePath };
+          })
+        );
+
+    return res.status(201).json({ 
+      fileImageId: fileImage.id,
+      images: galleryEntries,
+      message: "Gallery created and images uploaded successfully!"
+    });
+
+  } catch (error) {
+    return res.status(500).json({ message: "Internal server error", error: error.message });
+  }
+};
+
+const getAllGalleries = async (req, res) => {
+  try {
+    // 🔍 Fetch all galleries from FileImage table
+    const galleries = await FileImage.findAll({
+      attributes: ["id", "outputPath"]
+    });
+
+    if (!galleries.length) {
+      return res.status(404).json({ message: "No galleries found." });
+    }
+    console.log("FileImage Retrieved:", FileImage);
+
+    // ✅ Format response with gallery ID and associated images
+    const formattedGalleries = galleries.map(gallery => ({
+      galleryId: gallery.id,
+      images: gallery.outputPath.images.map(image => ({
+        id: image, // Image ID (if stored as filename)
+        imageUrl: image
+      }))
+    }));
+
+    return res.status(200).json({
+      galleries: formattedGalleries,
+      message: "Galleries retrieved successfully!"
+    });
+  } catch (error) {
+    console.error("Error fetching galleries:", error);
+    return res.status(500).json({ message: "Internal server error", error: error.message });
+  }
+};
+
+
+const getGalleryById = async (req, res) => {
+  try {
+    const { galleryId } = req.params;
+
+    const fileImage = await FileImage.findByPk(galleryId);
+    if (!fileImage) {
+      return res.status(404).json({ message: "Gallery not found." });
     }
 
-    // ✅ First, save images in FileImage
-    const fileImages = await Promise.all(
-      req.files.map(async (file) => {
-        const savedFileImage = await FileImage.create({
-          userId,
-          outputPath: file.filename
-        });
-        return savedFileImage;
-      })
-    );
-    const fileImageIdsString = fileImages.map(image => image.id).join(",");
-
-    return res.status(201).json({
-        success: true,
-        message: "Images uploaded successfully!",
-        galleryIds: fileImageIdsString,
+    return res.status(200).json({
+      galleryId: fileImage.id,
+      images: fileImage.outputPath.images,
+      message: "Gallery retrieved successfully!"
     });
-
-
   } catch (error) {
-    console.error("Error creating image:", error);
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ message: "Internal server error", error: error.message });
   }
 };
 
-const getImageById = async (req, res) => {
+const deleteGalleryById = async (req, res) => {
   try {
-    const image = await FileImage.findByPk(req.params.id); // ✅ Fetch from FileImage instead of Gallery
-    if (!image) return res.status(404).json({ message: "Image not found!" });
+    const { galleryId } = req.params;
 
-    res.status(200).json({
-      success: true,
-      fileImageId: image.id, // ✅ Return FileImage ID
-      outputPath: image.outputPath,
-    });
+    const fileImage = await FileImage.findByPk(galleryId);
+    if (!fileImage) {
+      return res.status(404).json({ message: "Gallery not found." });
+    }
 
-  } catch (error) {
-    console.error("Error retrieving image:", error);
-    res.status(500).json({ error: error.message });
-  }
-};
+    const webpImagePaths = fileImage.outputPath.images;
 
-const replaceImage = async (req, res) => {
-  try {
-    const fileImage = await FileImage.findByPk(req.params.id);
-    if (!fileImage) return res.status(404).json({ message: "Image not found!" });
+    await Gallery.destroy({ where: { imageUrl: webpImagePaths } });
+    await fileImage.destroy();
 
-    if (!req.file) return res.status(400).json({ message: "No file uploaded!" });
 
-    const oldImagePath = path.join("uploads", fileImage.outputPath);
-    if (fs.existsSync(oldImagePath)) fs.unlinkSync(oldImagePath);
-
-    await convertToWebP(req, res, async () => {
-      const newImagePath = req.file.filename;
-
-      await fileImage.update({ outputPath: newImagePath });
-
-      res.status(200).json({
-        success: true,
-        message: "Image replaced successfully!",
-        fileImageId: fileImage.id,
-        newOutputPath: newImagePath,
+    webpImagePaths.forEach(imagePath => {
+      const fullPath = `uploads/${imagePath}`;
+      fs.unlink(fullPath, (err) => {
+        if (err) console.error("Error deleting file from disk:", err);
       });
     });
 
+    return res.status(200).json({ message: "Gallery and associated images deleted successfully!" });
+  } catch (error) {
+    console.error("Error deleting gallery:", error);
+    return res.status(500).json({ message: "Internal server error", error: error.message });
+  }
+};
+//single image
+
+const getSingleImageById = async (req, res) => {
+  try {
+    const { imageId } = req.params;
+    
+    const image = await Gallery.findByPk(imageId);
+
+    if (!image) {
+      return res.status(404).json({ message: "Image not found." });
+    }
+
+    return res.status(200).json({
+      id: image.id,
+      imageUrl: image.imageUrl,
+      message: "Image retrieved successfully!"
+    });
+  } catch (error) {
+    console.error("Error fetching image:", error);
+    return res.status(500).json({ message: "Internal server error", error: error.message });
+  }
+};
+
+const replaceImageById = async (req, res) => {
+  try {
+    const { imageId } = req.params;
+
+    if (!req.file || req.file.length === 0) {
+      return res.status(400).json({ message: "New image file is required." });
+    }
+
+    const newWebpImage = req.file.filename;
+
+    const image = await Gallery.findByPk(imageId);
+    if (!image) {
+      return res.status(404).json({ message: "Image not found." });
+    }
+
+    const oldImagePath = `uploads/${image.imageUrl}`;
+
+    await image.update({ imageUrl: newWebpImage });
+
+    fs.unlink(oldImagePath, (err) => {
+      if (err) console.error("Error deleting old file:", err);
+    });
+
+    return res.status(200).json({ 
+      id: image.id,
+      newImageUrl: newWebpImage,
+      message: "Image replaced successfully!"
+    });
   } catch (error) {
     console.error("Error replacing image:", error);
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ message: "Internal server error", error: error.message });
   }
 };
 
-const deleteImage = async (req, res) => {
+const deleteImageById = async (req, res) => {
   try {
-    const fileImage = await FileImage.findByPk(req.params.id); // ✅ Fetch from FileImage
-    if (!fileImage) return res.status(404).json({ message: "Image not found!" });
+    const { imageId } = req.params;
 
-    const imagePath = path.join("uploads", fileImage.outputPath);
-    if (fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
+    const image = await Gallery.findByPk(imageId);
+    if (!image) {
+      return res.status(404).json({ message: "Image not found." });
+    }
 
-    await fileImage.destroy();
-    res.status(200).json({ success: true, message: "Image deleted successfully!" });
+    const imagePath = `uploads/${image.imageUrl}`;
 
+    await image.destroy();
+
+    fs.unlink(imagePath, (err) => {
+      if (err) console.error("Error deleting file from disk:", err);
+    });
+
+    return res.status(200).json({ message: "Image deleted successfully!" });
   } catch (error) {
     console.error("Error deleting image:", error);
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ message: "Internal server error", error: error.message });
   }
 };
 
-module.exports = { createImage, getImageById, replaceImage, deleteImage };
+
+module.exports = { 
+  createGallery, 
+  getGalleryById,
+  getAllGalleries,
+  deleteGalleryById, 
+  getSingleImageById, 
+  replaceImageById, 
+  deleteImageById
+};

@@ -29,13 +29,18 @@ module.exports = {
         },
         onDelete: "CASCADE",
       },
+      subcategoryIds: {
+        type: Sequelize.ARRAY(Sequelize.INTEGER),
+        allowNull: true,
+      },
+
       price: {
         type: Sequelize.INTEGER,
         allowNull: false,
       },
       cover: {
         type: Sequelize.STRING,
-        allowNull: false,
+        allowNull: true,
       },
       status: {
         type: Sequelize.INTEGER,
@@ -45,7 +50,12 @@ module.exports = {
         type: Sequelize.STRING,
        },
       gallery: {
-        type: Sequelize.ARRAY(Sequelize.INTEGER),
+        type: Sequelize.INTEGER,
+        references: {
+          model: "FileImages", 
+          key: "id",
+        },
+        onDelete: "CASCADE",
         allowNull: true,
       },
       createdAt: {
