@@ -7,6 +7,8 @@ module.exports = (sequelize, DataTypes) => {
       this.belongsTo(models.Category, { foreignKey: "categoryId", onDelete: "CASCADE" });
       this.belongsTo(models.Brand, { foreignKey: "brandId", onDelete: "CASCADE" });
       this.belongsTo(models.FileImage, { foreignKey: "cover", as: "CoverImage", onDelete: "SET NULL" });
+      this.belongsTo(models.FileImage, { foreignKey: "gallery", as: "GalleryImages", onDelete: "SET NULL" }); 
+
       this.belongsToMany(models.Subcategory, {
         through: "ProductSubcategories",
         foreignKey: "productId"

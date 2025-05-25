@@ -27,11 +27,6 @@ const createProduct = async (req, res) => {
             if (!subcategory) return res.status(404).json({ success: false, msg: `Subcategory ${subcategoryId} not found!` });
         }
         const parsedSubcategoryIds = Array.isArray(subcategoryIds) ? subcategoryIds : JSON.parse(subcategoryIds);
-        console.log("___________________Gallery ID:", galleryId);
-        console.log("Subcategory IDs:", subcategoryIds);
-        console.log("Subcategory IDs Type:", typeof subcategoryIds);
-
-
 
         let fileImage = null;
         if (cover) {
@@ -77,7 +72,7 @@ const getAllProducts = async (req, res) => {
         const includeOptions = [
             { model: Brand, attributes: ["id", "name"] },
             { model: FileImage, attributes: ["id", "outputPath"], as: "CoverImage" },
-
+            { model: FileImage, attributes: ["id", "outputPath"], as: "GalleryImages" } 
         ];
 
         if (isCat === "true") {
@@ -86,13 +81,11 @@ const getAllProducts = async (req, res) => {
         if (isSub === "true") {
             includeOptions.push({ model: Subcategory, attributes: ["id", "name"] });
         }
+
         const products = await Product.findAll({
             where: { status: 1 },
-            attributes: ["id", "name", "price", "cover"],
-            include: [
-                { model: Brand, attributes: ["id", "name"] },
-                { model: FileImage, attributes: ["id", "outputPath"], as: "CoverImage" }
-            ]
+            attributes: ["id", "name", "price", "cover", "gallery", "categoryId", "status"],
+            include: includeOptions
         });
 
         return res.status(200).json({ success: true, products });
@@ -101,8 +94,6 @@ const getAllProducts = async (req, res) => {
         return res.status(500).json({ success: false, msg: "Server error while fetching products", error: err.message });
     }
 };
-
-
 
 
 const updateProduct = async (req, res) => {
