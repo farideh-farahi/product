@@ -95,7 +95,6 @@ const getAllProducts = async (req, res) => {
     }
 };
 
-
 const updateProduct = async (req, res) => {
     const { id } = req.params;
     const { name, brandId, price, categoryId, subcategoryIds, status, cover } = req.body;

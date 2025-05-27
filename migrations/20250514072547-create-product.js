@@ -39,7 +39,7 @@ module.exports = {
         allowNull: false,
       },
       cover: {
-        type: Sequelize.STRING,
+        type: Sequelize.INTEGER,
         allowNull: true,
       },
       status: {

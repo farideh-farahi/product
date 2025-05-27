@@ -1,58 +1,69 @@
 const fs = require("fs");
+const { Sequelize } = require("sequelize"); 
+
+
 const { Gallery, FileImage } = require("../models");
 
 //gallery 
 const createGallery = async (req, res) => {
   try {
-
     const userId = req.user?.user_id;
 
-    if (!req.file || req.file.length === 0) {
+    if (!req.files || req.files.length === 0) {
       return res.status(400).json({ message: "No file uploaded!" });
     }
-    const webpImages = req.file.map(file => file.filename)
+
+    const webpImages = req.files.map(file => file.filename);
     const fileImage = await FileImage.create({
       userId,
-      outputPath: { images: webpImages }
+      outputPath: JSON.stringify({ images: webpImages })
     });
 
-    const galleryEntries = await Promise.all(
-          webpImages.map(async imagePath => {
-            const gallery = await Gallery.create({ imageUrl: imagePath });
-            return { id: gallery.id, imageUrl: imagePath };
-          })
-        );
+    console.log("Created FileImage:", fileImage);
 
-    return res.status(201).json({ 
+    // ✅ Now assign fileImageId to each image in the Gallery table
+    const galleryEntries = await Promise.all(
+      webpImages.map(async imagePath => {
+        const gallery = await Gallery.create({ imageUrl: imagePath, fileImageId: fileImage.id });
+        return { id: gallery.id, imageUrl: imagePath };
+      })
+    );
+
+    return res.status(201).json({
       fileImageId: fileImage.id,
       images: galleryEntries,
       message: "Gallery created and images uploaded successfully!"
     });
-
   } catch (error) {
     return res.status(500).json({ message: "Internal server error", error: error.message });
   }
 };
 
-const getAllGalleries = async (req, res) => {
+
+const getAllPhotos = async (req, res) => {
   try {
-    // 🔍 Fetch all galleries from FileImage table
     const galleries = await FileImage.findAll({
-      attributes: ["id", "outputPath"]
+      attributes: ["id", "outputPath"],
+      include: [
+        {
+          model: Gallery,
+          attributes: ["id", "imageUrl"]
+        }
+      ]
     });
 
     if (!galleries.length) {
       return res.status(404).json({ message: "No galleries found." });
     }
-    console.log("FileImage Retrieved:", FileImage);
 
-    // ✅ Format response with gallery ID and associated images
+    console.log("Retrieved galleries:", JSON.stringify(galleries, null, 2));
+
     const formattedGalleries = galleries.map(gallery => ({
       galleryId: gallery.id,
-      images: gallery.outputPath.images.map(image => ({
-        id: image, // Image ID (if stored as filename)
-        imageUrl: image
-      }))
+      images: gallery.Galleries?.map(image => ({
+        id: image.id,
+        imageUrl: image.imageUrl
+      })) || []
     }));
 
     return res.status(200).json({
@@ -70,20 +81,38 @@ const getGalleryById = async (req, res) => {
   try {
     const { galleryId } = req.params;
 
-    const fileImage = await FileImage.findByPk(galleryId);
+    // 🔍 Fetch gallery with images from Gallery table
+    const fileImage = await FileImage.findByPk(galleryId, {
+      attributes: ["id", "outputPath"],
+      include: [
+        {
+          model: Gallery,
+          attributes: ["id", "imageUrl"]
+        }
+      ]
+    });
+
     if (!fileImage) {
       return res.status(404).json({ message: "Gallery not found." });
     }
 
+    // ✅ Extract images properly, ensuring database IDs are used
+    const images = fileImage.Galleries?.map(image => ({
+      id: image.id, // ✅ Use ID from Gallery table
+      imageUrl: image.imageUrl
+    })) || [];
+
     return res.status(200).json({
       galleryId: fileImage.id,
-      images: fileImage.outputPath.images,
+      images,
       message: "Gallery retrieved successfully!"
     });
   } catch (error) {
+    console.error("Error fetching gallery:", error);
     return res.status(500).json({ message: "Internal server error", error: error.message });
   }
 };
+
 
 const deleteGalleryById = async (req, res) => {
   try {
@@ -94,12 +123,32 @@ const deleteGalleryById = async (req, res) => {
       return res.status(404).json({ message: "Gallery not found." });
     }
 
-    const webpImagePaths = fileImage.outputPath.images;
+    // ✅ Ensure `outputPath.images` is properly handled
+    let webpImagePaths = [];
 
+    if (typeof fileImage.outputPath === "string") {
+      try {
+        const parsed = JSON.parse(fileImage.outputPath);
+        webpImagePaths = parsed.images && Array.isArray(parsed.images) ? parsed.images : [];
+      } catch (error) {
+        console.error("Error parsing outputPath:", error);
+      }
+    } else if (fileImage.outputPath?.images && Array.isArray(fileImage.outputPath.images)) {
+      webpImagePaths = fileImage.outputPath.images;
+    }
+
+    // ✅ Prevent errors if `webpImagePaths` is empty or undefined
+    if (!webpImagePaths.length) {
+      return res.status(400).json({ message: "No images found in the gallery to delete." });
+    }
+
+    // 🔥 Delete images from `Gallery`
     await Gallery.destroy({ where: { imageUrl: webpImagePaths } });
+
+    // 🔥 Delete gallery record
     await fileImage.destroy();
 
-
+    // 🔥 Delete images from filesystem
     webpImagePaths.forEach(imagePath => {
       const fullPath = `uploads/${imagePath}`;
       fs.unlink(fullPath, (err) => {
@@ -113,6 +162,7 @@ const deleteGalleryById = async (req, res) => {
     return res.status(500).json({ message: "Internal server error", error: error.message });
   }
 };
+
 //single image
 
 const getSingleImageById = async (req, res) => {
@@ -140,11 +190,11 @@ const replaceImageById = async (req, res) => {
   try {
     const { imageId } = req.params;
 
-    if (!req.file || req.file.length === 0) {
+    if (!req.files || req.files.length === 0) {
       return res.status(400).json({ message: "New image file is required." });
     }
 
-    const newWebpImage = req.file.filename;
+    const newWebpImage = req.files.filename;
 
     const image = await Gallery.findByPk(imageId);
     if (!image) {
@@ -198,7 +248,7 @@ const deleteImageById = async (req, res) => {
 module.exports = { 
   createGallery, 
   getGalleryById,
-  getAllGalleries,
+  getAllPhotos,
   deleteGalleryById, 
   getSingleImageById, 
   replaceImageById, 

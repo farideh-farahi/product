@@ -1,11 +1,11 @@
 'use strict';
-const {
-  Model
-} = require('sequelize');
+const { Model } = require('sequelize');
+
 module.exports = (sequelize, DataTypes) => {
 class FileImage extends Model {
   static associate(models) {
     FileImage.belongsTo(models.User, { foreignKey: "userId", onDelete: "CASCADE" });
+    FileImage.hasMany(models.Gallery, { foreignKey: "fileImageId", onDelete: "CASCADE" });
   }
 }
 
