@@ -5,7 +5,7 @@ module.exports = (sequelize, DataTypes) => {
 class FileImage extends Model {
   static associate(models) {
     FileImage.belongsTo(models.User, { foreignKey: "userId", onDelete: "CASCADE" });
-    FileImage.hasMany(models.Gallery, { foreignKey: "fileImageId", onDelete: "CASCADE" });
+    FileImage.hasOne(models.Gallery, { foreignKey: "fileImageId", onDelete: "CASCADE" });
     FileImage.hasOne(models.Product, {foreignKey: "cover", onDelete: "SET NULL"})
   }
 }

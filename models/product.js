@@ -5,8 +5,8 @@ module.exports = (sequelize, DataTypes) => {
   class Product extends Model {
     static associate(models) {
       Product.belongsTo(models.Brand, { foreignKey: "brandId", onDelete: "CASCADE" });
-      Product.belongsTo(models.FileImage, { foreignKey: "cover", onDelete: "SET NULL" });
-      Product.hasMany(models.Gallery, {foreignKey:"productId", onDelete :"SET NULL"})
+      Product.belongsTo(models.FileImage, { foreignKey: "cover",as: "CoverImage", onDelete: "SET NULL" });
+      Product.hasMany(models.Gallery, {foreignKey:"productId", as: "Galleries", onDelete :"SET NULL"})
       Product.belongsTo(models.Category, { foreignKey: "categoryId", onDelete: "CASCADE" });
       Product.belongsToMany(models.Subcategory, {
         through: "ProductSubcategories",

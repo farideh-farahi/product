@@ -2,10 +2,11 @@ const express = require('express');
 const router = express.Router();
 const { 
     createGallery,
-    getGalleryById,
+    getGalleryByProductId,
+    updateGalleryProductId,
     getAllPhotos,
     getSingleImageById,
-    deleteGalleryById,
+    deleteGalleryByProductId,
     replaceImageById,
     deleteImageById
   } = require("../controllers/galleryController");
@@ -14,8 +15,9 @@ const { upload , convertToWebP } = require("../middlewares/uploadMiddleware")
 
 router.post('/', validateToken, upload.any(), convertToWebP, createGallery);
 router.get('/all',validateToken, getAllPhotos);
-router.get('/:galleryId',validateToken, getGalleryById);
-router.delete('/:galleryId', validateToken, deleteGalleryById);
+router.get('/:productId',validateToken, getGalleryByProductId);
+router.put('/:galleryId', validateToken, updateGalleryProductId);
+router.delete('/:productId', validateToken, deleteGalleryByProductId);
 
 
 router.get('/image/:imageId',validateToken, getSingleImageById);
