@@ -6,12 +6,13 @@ class FileImage extends Model {
   static associate(models) {
     FileImage.belongsTo(models.User, { foreignKey: "userId", onDelete: "CASCADE" });
     FileImage.hasMany(models.Gallery, { foreignKey: "fileImageId", onDelete: "CASCADE" });
+    FileImage.hasOne(models.Product, {foreignKey: "cover", onDelete: "SET NULL"})
   }
 }
 
 FileImage.init({
     userId: { type: DataTypes.INTEGER, allowNull: false },
-    outputPath: DataTypes.JSONB,
+    outputPath: DataTypes.STRING,
 }, {
     sequelize,
     modelName: 'FileImage',

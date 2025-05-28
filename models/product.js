@@ -4,12 +4,11 @@ const { Model } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
   class Product extends Model {
     static associate(models) {
-      this.belongsTo(models.Category, { foreignKey: "categoryId", onDelete: "CASCADE" });
-      this.belongsTo(models.Brand, { foreignKey: "brandId", onDelete: "CASCADE" });
-      this.belongsTo(models.FileImage, { foreignKey: "cover", as: "CoverImage", onDelete: "SET NULL" });
-      this.belongsTo(models.FileImage, { foreignKey: "gallery", as: "GalleryImages", onDelete: "SET NULL" }); 
-
-      this.belongsToMany(models.Subcategory, {
+      Product.belongsTo(models.Brand, { foreignKey: "brandId", onDelete: "CASCADE" });
+      Product.belongsTo(models.FileImage, { foreignKey: "cover", onDelete: "SET NULL" });
+      Product.hasMany(models.Gallery, {foreignKey:"productId", onDelete :"SET NULL"})
+      Product.belongsTo(models.Category, { foreignKey: "categoryId", onDelete: "CASCADE" });
+      Product.belongsToMany(models.Subcategory, {
         through: "ProductSubcategories",
         foreignKey: "productId"
       });
@@ -23,6 +22,7 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
         unique: true,
       },
+
       brandId: {
         type: DataTypes.INTEGER,
         references: {
@@ -31,27 +31,31 @@ module.exports = (sequelize, DataTypes) => {
         },
         onDelete: "CASCADE",
       },
+
       price: {
         type: DataTypes.INTEGER,
         allowNull: false,
       },
+
       cover: {
         type: DataTypes.INTEGER,
-        allowNull: true
+        allowNull: true,
+        references:{
+          model: "FileImages",
+          key: "id"
+        }
       },
-      status: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-      },
+
       gallery: {
         type: DataTypes.INTEGER,
         references: {
-          model: "FileImages", 
+          model: "Gallery", 
           key: "id",
         },
-        onDelete: "CASCADE",
+        onDelete: "SET NULL",
         allowNull: true,
       },
+
       categoryId: {
         type: DataTypes.INTEGER,
         references: {
@@ -60,9 +64,15 @@ module.exports = (sequelize, DataTypes) => {
         },
         onDelete: "CASCADE",
       },
+
       subcategoryIds: {
         type: DataTypes.ARRAY(DataTypes.INTEGER),
         allowNull: true,
+      },
+
+      status: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
       },
 
       attributes: {

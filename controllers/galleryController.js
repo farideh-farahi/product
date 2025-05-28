@@ -208,10 +208,10 @@ const replaceImageById = async (req, res) => {
     fs.unlink(oldImagePath, (err) => {
       if (err) console.error("Error deleting old file:", err);
     });
-
+    console.log("Updated Image Data:", image);
     return res.status(200).json({ 
       id: image.id,
-      newImageUrl: newWebpImage,
+      image,
       message: "Image replaced successfully!"
     });
   } catch (error) {

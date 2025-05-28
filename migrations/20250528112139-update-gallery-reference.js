@@ -2,10 +2,10 @@
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.addColumn("Gallery", "fileImageId", {
+    await queryInterface.changeColumn("Products", "gallery", {
       type: Sequelize.INTEGER,
       references: {
-        model: "FileImages", // ✅ Ensures association with FileImages table
+        model: "Gallery",
         key: "id",
       },
       onDelete: "CASCADE",
@@ -14,6 +14,9 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.removeColumn("Gallery", "fileImageId");
+    await queryInterface.changeColumn("Products", "gallery", {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+    });
   }
 };

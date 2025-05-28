@@ -5,15 +5,26 @@ module.exports = (sequelize, DataTypes) => {
   class Gallery extends Model {
     static associate(models) {
     Gallery.belongsTo(models.FileImage, { foreignKey: "fileImageId" });
+    Gallery.belongsTo(models.Product,{foreignKey: "productId"})
 
     }
   }
 
   Gallery.init(
     {
-      imageUrl: {
-        type: DataTypes.STRING,
-        allowNull: false
+      fileImageId:{ 
+        type: DataTypes.INTEGER,
+        references: {
+          model: "FileImages",
+          key: "id"
+      },
+    },
+      productId:{
+       type: DataTypes.INTEGER,
+       references:{
+        model: "Products",
+        key:"id"
+       }
       }
     },
     {
