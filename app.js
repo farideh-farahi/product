@@ -8,8 +8,9 @@ var authRoutes = require('./routes/authRouters');
 var categoryRoutes = require('./routes/categoryRouters');
 var subCategoryRoutes = require('./routes/subCategoryRouters');
 var brandRoutes = require('./routes/brandRouters');
-var imageRoutes = require('./routes/imageRouters');
 var galleryRoutes = require('./routes/galleryRouters');
+var coverRoutes = require('./routes/coverRouters');
+var imageRoutes = require('./routes/imageRouters');
 var productRoutes = require('./routes/productRouters');
 
 
@@ -25,8 +26,9 @@ app.use('/api/v0/auth', authRoutes);
 app.use('/api/v0/category', categoryRoutes);
 app.use('/api/v0/subcategory', subCategoryRoutes);
 app.use('/api/v0/brand', brandRoutes);
-app.use('/api/v0/image', imageRoutes);
 app.use('/api/v0/gallery', galleryRoutes);
+app.use('/api/v0/cover', coverRoutes);
+app.use('/api/v0/image', imageRoutes);
 app.use('/api/v0/product', productRoutes);
 
 module.exports = app;

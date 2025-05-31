@@ -1,135 +1,33 @@
-const path = require("path");
-const fs = require("fs");
-const sharp = require("sharp");
-const { FileImage } = require("../models"); 
+const { FileImage , Product} = require("../models"); 
 
-const createCover = async(req, res) =>{
+const getProductCover = async (req, res) => {
     try {
-    const userId = req.user?.user_id;
+        const { productId } = req.params;
 
-    if (!req.file) {
-      return res.status(400).json({ success: false, msg: "No file uploaded!" });
+        const product = await Product.findByPk(productId, {
+            attributes: ["id", "name", "cover"],
+            include: [{ model: FileImage, as: "CoverImage", attributes: ["id", "outputPath"] }]
+        });
+
+        if (!product || !product.CoverImage) {
+            return res.status(404).json({ success: false, msg: "Cover image not found for this product." });
+        }
+
+        return res.status(200).json({
+            success: true,
+            productId,
+            productName: product.name,
+            coverImageUrl: product.CoverImage.outputPath,
+            msg: "Cover image retrieved successfully!"
+        });
+
+    } catch (error) {
+        console.error("Error fetching product cover:", error);
+        return res.status(500).json({ success: false, msg: "Server error while fetching cover image", error: error.message });
     }
-
-    const fileSize = req.file.size;
-    if (fileSize > 500 * 1024) {
-      return res.status(400).json({ success: false, msg: "The maximum size you can upload is 500 KB." });
-    }
-
-    const originalPath = `uploads/${Date.now()}-original.webp`;
-    const tinyPath = `uploads/${Date.now()}-tiny.webp`;
-
-    fs.renameSync(req.file.path, originalPath);
-
-
-    await sharp(originalPath)
-      .resize({ width: 100 })
-      .webp({ quality: 80 })
-      .toFile(tinyPath);
-
-
-    const fileImage = await FileImage.create({
-      userId,
-      outputPath: path.basename(originalPath)
-    });
-
-    return res.status(201).json({
-      success: true,
-      msg: "Cover image uploaded and resized successfully!",
-      fileImageId: fileImage.id,
-      userId,
-      originalImagePath: path.basename(originalPath),
-      tinyImagePath: path.basename(tinyPath),
-    });
-
-  } catch (error) {
-    console.error("Error processing image:", error);
-    return res.status(500).json({ success: false, msg: "Server error while processing image", error: error.message });
-  }
-}
-
-const replaceCover = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const userId = req.user?.user_id;
-
-    if (!req.file) return res.status(400).json({ success: false, msg: "No file uploaded!" });
-
-    const fileImage = await FileImage.findByPk(id);
-    if (!fileImage) return res.status(404).json({ success: false, msg: "Cover image not found!" });
-
-    const oldCoverPath = path.join("uploads", fileImage.outputPath);
-    if (fs.existsSync(oldCoverPath)) {
-      fs.unlinkSync(oldCoverPath);
-    }
-
-    const newCoverPath = `uploads/${Date.now()}-cover.webp`;
-    fs.renameSync(req.file.path, newCoverPath);
-
-      await FileImage.update(
-      { outputPath: path.basename(newCoverPath) },
-      { where: { id } }
-    );
-
-    return res.status(200).json({
-      success: true,
-      msg: "Cover image updated successfully!",
-      fileImageId: id,
-      userId,
-      coverImagePath: path.basename(newCoverPath)
-    });
-
-  } catch (error) {
-    console.error("Error updating cover image:", error);
-    return res.status(500).json({ success: false, msg: "Server error while updating cover image", error: error.message });
-  }
 };
 
-const deleteCover = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const fileImage = await FileImage.findByPk(id);
-    if (!fileImage) return res.status(404).json({ success: false, msg: "Cover image not found!" });
 
-    const coverPath = path.join("uploads", fileImage.outputPath);
-    if (fs.existsSync(coverPath)) {
-      fs.unlinkSync(coverPath);
-    }
-
-    await fileImage.destroy();
-
-    return res.status(200).json({ success: true, msg: "Cover image deleted successfully!" });
-
-  } catch (error) {
-    console.error("Error deleting cover image:", error);
-    return res.status(500).json({ success: false, msg: "Server error while deleting cover image", error: error.message });
-  }
-}
-
-const userImages = async (req, res) => {
-  try {
-    const { userId } = req.params;
-
-    const userImages = await FileImage.findAll({ where: { userId } });
-
-    if (!userImages.length) {
-      return res.status(404).json({ success: false, msg: "No images found for this user!" });
-    }
-
-    return res.status(200).json({
-      success: true,
-      msg: "User images retrieved successfully!",
-      images: userImages
-    });
-
-  } catch (error) {
-    console.error("Error retrieving user images:", error);
-    return res.status(500).json({ success: false, msg: "Server error while fetching images", error: error.message });
-  }
-}
 module.exports ={
-    createCover,
-    replaceCover,
-    deleteCover,
-    userImages
+  getProductCover
 }
