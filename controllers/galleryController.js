@@ -1,21 +1,13 @@
 const fs = require("fs");
 const { Gallery, FileImage, Product } = require("../models");
 
-//gallery 
-const createGallery = async (req, res) => {
+//Uploading Image
+const getImage = async (req, res) => {
   try {
     const userId = req.user?.user_id;
-    const { productId } = req.body;
 
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ success: false, msg: "No file uploaded!" });
-    }
-
-    if (productId) {
-      const productExists = await Product.findByPk(productId);
-      if (!productExists) {
-        return res.status(400).json({ success: false, msg: "Invalid productId! Product does not exist." });
-      }
     }
 
     const galleryEntries = await Promise.all(
@@ -26,8 +18,7 @@ const createGallery = async (req, res) => {
         });
 
         const gallery = await Gallery.create({
-          fileImageId: fileImage.id,
-          productId: productId || null,
+          fileImageId: fileImage.id
         });
 
         return {
@@ -39,7 +30,6 @@ const createGallery = async (req, res) => {
     );
 
     return res.status(201).json({
-      productId: productId || null,
       images: galleryEntries,
       message: "Gallery created successfully!",
     });
@@ -288,7 +278,7 @@ const deleteImageById = async (req, res) => {
 };
 
 module.exports = { 
-  createGallery, 
+  getImage, 
   getGalleryByProductId,
   updateGalleryProductId,
   getAllPhotos,
