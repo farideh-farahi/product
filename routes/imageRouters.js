@@ -5,7 +5,6 @@ const validateToken = require("../middlewares/tokenValidation");
 const { upload, convertToWebP } = require("../middlewares/uploadMiddleware");
 const {
     uploadImage,
-    assignImage,
     getAllPhotos,
     getImageById,
     getImageByUserId,
@@ -14,7 +13,6 @@ const {
     } = require ("../controllers/imageController")
 //POST 
 router.post('/upload', validateToken, upload.any(), convertToWebP, uploadImage);
-router.post('/assign', validateToken,assignImage );
 
 //GET
 router.get("/all", validateToken, getAllPhotos );

@@ -100,8 +100,6 @@ const assignImage = async (req, res) => {
     }
 };
 
-
-
 const getAllPhotos = async (req, res) => {
     try {
         const galleries = await Gallery.findAll({
