@@ -1,37 +1,5 @@
 const { FileImage , Product} = require("../models"); 
 
-const assignCoverToProduct = async(req, res) => {
-    try{
-        const productId = req.params;
-        const fileImageId = req.body;
-
-        if (!Number.isInteger(fileImageId)) {
-                return res.status(400).json({ success: false, msg: "Cover image must be assigned a single valid image ID!" });
-        }
-
-        const fileImage = await FileImage.findByPk(fileImageId);
-
-        if (!fileImage) {
-            return res.status(400).json({ success: false, msg: "Invalid fileImageId!" });
-        }
-
-        assignCoverImage(fileImage.userId, fileImageId);
-
-        return res.status(201).json({
-            success: true,
-            msg: "Image assigned as cover!",
-            fileImageId
-        });
-
-    } catch (err) {
-        return res.status(500).json({
-            success: false,
-            msg: "Server error while assigning image",
-            error: err.message,
-        });
-    }
-};
-
 const getProductCover = async (req, res) => {
     try {
         const { productId } = req.params;
@@ -61,6 +29,5 @@ const getProductCover = async (req, res) => {
 
 
 module.exports ={
-    assignCoverToProduct,
   getProductCover
 }
