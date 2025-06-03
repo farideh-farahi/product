@@ -2,9 +2,9 @@ const { Product, Brand, Category, Subcategory, FileImage , Gallery} = require(".
 
 const createProduct = async (req, res) => {
   try {
-    const { name, brandId, price, cover, galleryIds, categoryId, subcategoryIds, status } = req.body;
+    const { name, brandId, price, cover, galleryIds, categoryId, subcategoryIds, status, inventory } = req.body;
 
-    if (!name || !brandId || !price || !categoryId || !subcategoryIds || !status) {
+    if (!name || !brandId || !price || !categoryId || !subcategoryIds || !status || !inventory) {
       return res.status(400).json({ success: false, msg: "Missing required fields!" });
     }
 
@@ -97,7 +97,7 @@ const getAllProducts = async (req, res) => {
 
     const products = await Product.findAll({
       where: { status: 1 },
-      attributes: ["id", "name", "price", "cover", "categoryId", "status"],
+      attributes: ["id", "name", "price", "cover", "categoryId", "status", "inventory"],
       include: includeOptions
     });
 
@@ -113,7 +113,7 @@ const getProductById = async (req, res) => {
 
   try {
     const product = await Product.findByPk(productId, {
-      attributes: ["id", "name", "price", "categoryId", "status"], 
+      attributes: ["id", "name", "price", "categoryId", "status", "inventory"], 
       include: [
         { model: Brand, attributes: ["id", "name"] },
         { model: FileImage, attributes: ["id", "outputPath"], as: "CoverImage" },
@@ -144,7 +144,7 @@ const getProductById = async (req, res) => {
 
 const updateProduct = async (req, res) => {
   const { id } = req.params;
-  const { name, brandId, price, categoryId, subcategoryIds, status, cover, galleryIds } = req.body;
+  const { name, brandId, price, categoryId, subcategoryIds, status, cover, galleryIds, inventory } = req.body;
 
   try {
     const product = await Product.findByPk(id);
@@ -166,6 +166,7 @@ const updateProduct = async (req, res) => {
       brandId,
       price,
       categoryId,
+      inventory,
       subcategoryIds,
       status,
       cover: fileImage ? fileImage.id : null, 
