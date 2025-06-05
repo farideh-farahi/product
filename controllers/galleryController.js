@@ -1,44 +1,5 @@
 const fs = require("fs");
-const { Gallery, FileImage, Product } = require("../models");
-
-const assignGalleryToProduct = async(req, res) => {
-  try{
-      const productId = req.params;
-      const fileImageId = req.body;
-
-      const imageIds = Array.isArray(fileImageId) ? fileImageId : [fileImageId];
-
-      const fileImages = await FileImage.findAll({ where: { id: imageIds } });
-      if (fileImages.length !== imageIds.length) {
-          return res.status(400).json({ success: false, msg: "One or more fileImageIds are invalid!" });
-      }
-
-      if (productId) {
-          const productExists = await Product.findByPk(productId);
-          if (!productExists) {
-              return res.status(400).json({ success: false, msg: "Invalid productId! Product does not exist." });
-          }
-      }
-      await Promise.all(
-          fileImages.map(async (fileImage) => {
-              await Gallery.create({ fileImageId: fileImage.id, productId: productId || null });
-          })
-      );
-
-      return res.status(201).json({
-          success: true,
-          msg: "Images assigned to gallery!",
-          assignedImages: imageIds
-      });
-
-      }catch (err) {
-        return res.status(500).json({
-            success: false,
-            msg: "Server error while assigning image",
-            error: err.message,
-        });
-    }
-};
+const { Gallery, FileImage } = require("../models");
 
 const getAllGalleries = async (req, res) => {
   try {
@@ -148,7 +109,6 @@ const deleteGalleryByProductId = async (req, res) => {
 };
 
 module.exports = {
-  assignGalleryToProduct,
   getAllGalleries,
   getGalleryByProductId,
   deleteGalleryByProductId, 
