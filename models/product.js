@@ -12,6 +12,7 @@ module.exports = (sequelize, DataTypes) => {
         through: "ProductSubcategories",
         foreignKey: "productId"
       });
+      Product.hasMany(models.Order, { foreignKey: "productId", onDelete: "CASCADE" });
     }
   }
 
@@ -69,7 +70,6 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.ARRAY(DataTypes.INTEGER),
         allowNull: true,
       },
-
       status: {
         type: DataTypes.INTEGER,
         allowNull: false,
@@ -79,8 +79,6 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
         defaultValue: 5,
       },
-
-
       attributes: {
         type: DataTypes.JSON,
         allowNull: true,

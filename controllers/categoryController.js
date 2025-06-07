@@ -68,7 +68,7 @@ const updateCategory = async (req, res) => {
     }
   };
 
-  const deleteCategory = async (req, res) => {
+const deleteCategory = async (req, res) => {
     const category_id = req.params.id;
  
     try{
@@ -83,10 +83,51 @@ const updateCategory = async (req, res) => {
     }catch(err){
       res.status(500).json({ success: false, msg: "Server error while deleting category", error: err.message });
     }
- }
+ };
+
+const getCategoryMenu = async (req, res) => {
+    try {
+        const categories = await Category.findAll({
+            where: { is_active: true },
+            include: [
+                {
+                    model: Subcategory,
+                    attributes: ["id", "name", "description"]
+                }
+            ],
+            attributes: ["id", "name", "description"]
+        });
+
+        if (!categories || categories.length === 0) {
+            return res.status(200).json({ success: true, msg: "No categories found" });
+        }
+
+        // ✅ Formatting the response to group subcategories under each category
+        const formattedMenu = categories.map(category => ({
+            id: category.id,
+            name: category.name,
+            description: category.description,
+            subcategories: category.Subcategories.map(sub => ({
+                id: sub.id,
+                name: sub.name,
+                description: sub.description
+            }))
+        }));
+
+        res.json({ success: true, menu: formattedMenu });
+    } catch (err) {
+        console.error("Error fetching category menu:", err);
+        res.status(500).json({ success: false, msg: "Server error while retrieving menu", error: err.message });
+    }
+};
+
+
+
 
 module.exports = {
     createCategory, 
     getAllCategories, 
     updateCategory, 
-    deleteCategory}
+    deleteCategory,
+    getCategoryMenu
+}

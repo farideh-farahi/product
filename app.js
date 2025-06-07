@@ -12,6 +12,8 @@ var galleryRoutes = require('./routes/galleryRouters');
 var coverRoutes = require('./routes/coverRouters');
 var imageRoutes = require('./routes/imageRouters');
 var productRoutes = require('./routes/productRouters');
+var orderRoutes = require('./routes/orderRouters');
+
 
 
 var app = express();
@@ -30,5 +32,6 @@ app.use('/api/v0/gallery', galleryRoutes);
 app.use('/api/v0/cover', coverRoutes);
 app.use('/api/v0/image', imageRoutes);
 app.use('/api/v0/product', productRoutes);
+app.use('/api/v0/order', orderRoutes);
 
 module.exports = app;

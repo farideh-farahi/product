@@ -4,7 +4,7 @@ const createProduct = async (req, res) => {
   try {
     const { name, brandId, price, cover, galleryIds, categoryId, subcategoryIds, status, inventory } = req.body;
 
-    if (!name || !brandId || !price || !categoryId || !subcategoryIds || !status || !inventory) {
+    if (!name || !brandId || !price || !categoryId || !subcategoryIds || !status) {
       return res.status(400).json({ success: false, msg: "Missing required fields!" });
     }
 
@@ -20,6 +20,9 @@ const createProduct = async (req, res) => {
       if (!fileImage) return res.status(404).json({ success: false, msg: "Cover image not found!" });
     }
 
+    // Ensure Inventory Uses Default or Provided Value
+    const productInventory = inventory !== undefined ? inventory : 5;
+
     const newProduct = await Product.create({
       name,
       brandId,
@@ -28,19 +31,19 @@ const createProduct = async (req, res) => {
       categoryId,
       subcategoryIds,
       status,
+      inventory: productInventory, // Apply the correct inventory logic
     });
 
     if (subcategoryIds && Array.isArray(subcategoryIds)) {
-    const validSubcategories = await Subcategory.findAll({ where: { id: subcategoryIds } });
-      
-    if (validSubcategories.length !== subcategoryIds.length) {
-      return res.status(400).json({ success: false, msg: "One or more subcategory IDs are invalid!" });
+      const validSubcategories = await Subcategory.findAll({ where: { id: subcategoryIds } });
+
+      if (validSubcategories.length !== subcategoryIds.length) {
+        return res.status(400).json({ success: false, msg: "One or more subcategory IDs are invalid!" });
+      }
+
+      await newProduct.setSubcategories(subcategoryIds);
     }
 
-    await newProduct.setSubcategories(subcategoryIds); 
-    }
-
-    // Assign Gallery Images (if provided)
     let galleryImages = [];
     if (galleryIds && Array.isArray(galleryIds)) {
       const validImages = await FileImage.findAll({ where: { id: galleryIds } });
@@ -66,15 +69,15 @@ const createProduct = async (req, res) => {
     });
 
   } catch (err) {
-  console.error("Error creating product:", err);
-  return res.status(500).json({ 
-    success: false, 
-    msg: "Server error while creating product", 
-    error: err.errors ? err.errors.map(e => e.message) : err.message 
-  });
-}
-
+    console.error("Error creating product:", err);
+    return res.status(500).json({ 
+      success: false, 
+      msg: "Server error while creating product", 
+      error: err.errors ? err.errors.map(e => e.message) : err.message 
+    });
+  }
 };
+
 
 const getAllProducts = async (req, res) => {
   try {
