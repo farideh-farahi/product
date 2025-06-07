@@ -2,32 +2,22 @@ const { Product, Brand, Category, Subcategory, FileImage , Gallery} = require(".
 
 const createProduct = async (req, res) => {
   try {
-    const { name, brandId, price, cover, galleryIds, categoryId, subcategoryIds, status } = req.body;
+    const { name, brandId, price, cover, galleryIds, categoryId, subcategoryIds, status, inventory } = req.body;
 
-    if (!name || !brandId || !price || !categoryId || !subcategoryIds || !status) {
+    if (!name || !brandId || !price || !categoryId || !subcategoryIds || !status || !inventory) {
       return res.status(400).json({ success: false, msg: "Missing required fields!" });
-    }
-
-    if (!Array.isArray(subcategoryIds)) {
-      return res.status(400).json({ success: false, msg: "subcategoryIds must be an array!" });
     }
 
     const brand = await Brand.findByPk(brandId);
     if (!brand) return res.status(404).json({ success: false, msg: "Brand not found!" });
+
+    const category = await Category.findByPk(categoryId);
     if (!category) return res.status(404).json({ success: false, msg: "Category not found!" });
 
     let fileImage = null;
     if (cover) {
       fileImage = await FileImage.findByPk(cover);
       if (!fileImage) return res.status(404).json({ success: false, msg: "Cover image not found!" });
-    }
-
-    let galleries = [];
-    if (galleryIds && Array.isArray(galleryIds)) {
-      galleries = await Gallery.findAll({ where: { id: galleryIds } });
-      if (galleries.length !== galleryIds.length) {
-        return res.status(404).json({ success: false, msg: "One or more gallery IDs are invalid!" });
-      }
     }
 
     const newProduct = await Product.create({
@@ -40,15 +30,50 @@ const createProduct = async (req, res) => {
       status,
     });
 
-    if (galleries.length) {
-      await Promise.all(galleries.map(gallery => gallery.update({ productId: newProduct.id })));
+    if (subcategoryIds && Array.isArray(subcategoryIds)) {
+    const validSubcategories = await Subcategory.findAll({ where: { id: subcategoryIds } });
+      
+    if (validSubcategories.length !== subcategoryIds.length) {
+      return res.status(400).json({ success: false, msg: "One or more subcategory IDs are invalid!" });
     }
 
-    return res.status(201).json({ success: true, msg: "Product created successfully!", product: newProduct });
+    await newProduct.setSubcategories(subcategoryIds); 
+    }
+
+    // Assign Gallery Images (if provided)
+    let galleryImages = [];
+    if (galleryIds && Array.isArray(galleryIds)) {
+      const validImages = await FileImage.findAll({ where: { id: galleryIds } });
+      if (validImages.length !== galleryIds.length) {
+        return res.status(400).json({ success: false, msg: "One or more gallery IDs are invalid!" });
+      }
+
+      await Promise.all(validImages.map(image => Gallery.create({ fileImageId: image.id, productId: newProduct.id })));
+
+      galleryImages = validImages.map(image => ({
+        fileImageId: image.id,
+        imageUrl: image.outputPath,
+      }));
+    }
+
+    return res.status(201).json({
+      success: true,
+      msg: "Product created successfully!",
+      product: {
+        ...newProduct.toJSON(),
+        gallery: galleryImages.length ? galleryImages : null,
+      }
+    });
+
   } catch (err) {
-    console.error(err);
-    return res.status(500).json({ success: false, msg: "Server error while creating product", error: err.message });
-  }
+  console.error("Error creating product:", err);
+  return res.status(500).json({ 
+    success: false, 
+    msg: "Server error while creating product", 
+    error: err.errors ? err.errors.map(e => e.message) : err.message 
+  });
+}
+
 };
 
 const getAllProducts = async (req, res) => {
@@ -119,19 +144,21 @@ const getProductById = async (req, res) => {
 
 const updateProduct = async (req, res) => {
   const { id } = req.params;
-  const { name, brandId, price, categoryId, subcategoryIds, status, cover, galleryIds } = req.body;
+  const { name, brandId, price, categoryId, subcategoryIds, status, cover, galleryIds, inventory } = req.body;
 
   try {
     const product = await Product.findByPk(id);
     if (!product) return res.status(404).json({ success: false, msg: "Product not found!" });
 
+    if (!Array.isArray(subcategoryIds)) {
+      return res.status(400).json({ success: false, msg: "subcategoryIds must be an array!" });
+    }
+
+    // Validate and assign Cover Image (if provided)
     let fileImage = null;
     if (cover) {
       fileImage = await FileImage.findByPk(cover);
       if (!fileImage) return res.status(404).json({ success: false, msg: "Cover image not found!" });
-    }
-    if (!Array.isArray(subcategoryIds)) {
-      return res.status(400).json({ success: false, msg: "subcategoryIds must be an array!" });
     }
 
     await product.update({
@@ -145,21 +172,43 @@ const updateProduct = async (req, res) => {
       cover: fileImage ? fileImage.id : null, 
     });
 
-    await Gallery.update({ productId: null }, { where: { productId: product.id } });
+    // Remove previous gallery associations
+    await Gallery.destroy({ where: { productId: product.id } });
 
-
+    // Assign new Gallery Images (if provided)
+    let galleryImages = [];
     if (galleryIds && Array.isArray(galleryIds) && galleryIds.length > 0) {
-      await Promise.all(galleryIds.map(async (galleryId) => {
-        await Gallery.update({ productId: product.id }, { where: { id: galleryId } });
+      const validImages = await FileImage.findAll({ where: { id: galleryIds } });
+      if (validImages.length !== galleryIds.length) {
+        return res.status(400).json({ success: false, msg: "One or more gallery IDs are invalid!" });
+      }
+
+      await Promise.all(validImages.map(image => Gallery.create({ fileImageId: image.id, productId: product.id })));
+
+      galleryImages = validImages.map(image => ({
+        fileImageId: image.id,
+        imageUrl: image.outputPath,
       }));
     }
 
-    return res.json({ success: true, msg: "Product updated successfully!", product });
+    return res.json({
+      success: true,
+      msg: "Product updated successfully!",
+      product: {
+        ...product.toJSON(),
+        gallery: galleryImages.length ? galleryImages : null,
+      }
+    });
+
   } catch (err) {
-    return res.status(500).json({ success: false, msg: "Server error while updating product", error: err.message });
+    console.error("Error updating product:", err);
+    return res.status(500).json({ 
+      success: false, 
+      msg: "Server error while updating product", 
+      error: err.errors ? err.errors.map(e => e.message) : err.message 
+    });
   }
 };
-
 
 
 const deleteProduct = async (req, res) => {
