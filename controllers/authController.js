@@ -6,7 +6,7 @@ const validator = require("validator");
 
 
 // Register User
-const register = async (req, res) => {
+exports.register = async (req, res) => {
     const { username, email, password } = req.body;
     if (!validator.isEmail(email)) {
         return res.status(400).json({ success: false, msg: "Invalid email format" });
@@ -31,7 +31,7 @@ const register = async (req, res) => {
 };
 
 // Login User
-const login = async (req, res) => {
+exports.login = async (req, res) => {
     const { username, password } = req.body;
 
     if (!username || !password) {
@@ -57,8 +57,6 @@ const login = async (req, res) => {
 };
 
 // Logout User
-const logout = async (req, res) => {
+exports.logout = async (req, res) => {
     return res.status(200).json({ success: true, msg: "Logout successful. Token discarded on the client side." });
 };
-
-module.exports = { register, login, logout };

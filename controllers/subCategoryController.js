@@ -1,7 +1,7 @@
 const { where } = require("sequelize");
 const { Subcategory, Category } = require("../models");
 
-const createSubcategory = async (req, res) => {
+exports.createSubcategory = async (req, res) => {
     const { name, description, categoryId } = req.body;
 
     if (!name || !description || !categoryId) {
@@ -22,7 +22,7 @@ const createSubcategory = async (req, res) => {
     }
 };
 
-const getAllSubcategories = async (req, res) => {
+exports.getAllSubcategories = async (req, res) => {
     try {
         const subcategories = await Subcategory.findAll({
             include: {
@@ -42,7 +42,8 @@ const getAllSubcategories = async (req, res) => {
         res.status(500).json({ success: false, msg: "Server error while retrieving subcategories", error: err.message });
     }
 };
-const getSubcategoriesByCategory = async (req, res) => {
+
+exports.getSubcategoriesByCategory = async (req, res) => {
     const { id } = req.params;
 
     try {
@@ -66,7 +67,7 @@ const getSubcategoriesByCategory = async (req, res) => {
     }
 };
 
-const updateSubcategory = async (req, res) => {
+exports.updateSubcategory = async (req, res) => {
     const { name, description, categoryId} = req.body;
 
     if (!name || !description || !categoryId) {
@@ -88,7 +89,7 @@ const updateSubcategory = async (req, res) => {
     }
 };
 
-const deleteSubcategory = async (req, res) => {
+exports.deleteSubcategory = async (req, res) => {
     const subcategoryId = req.params.id;
 
     try {
@@ -104,10 +105,3 @@ const deleteSubcategory = async (req, res) => {
         res.status(500).json({ success: false, msg: "Server error while deleting subcategory", error: err.message });
     }
 };
-
-module.exports = { 
-    createSubcategory, 
-    getAllSubcategories, 
-    getSubcategoriesByCategory, 
-    updateSubcategory, 
-    deleteSubcategory };

@@ -1,7 +1,7 @@
 const fs = require("fs");
 const { Gallery, FileImage } = require("../models");
 
-const getAllGalleries = async (req, res) => {
+exports.getAllGalleries = async (req, res) => {
   try {
     const galleries = await Gallery.findAll({
       attributes: ["id", "productId", "fileImageId"],
@@ -33,7 +33,7 @@ const getAllGalleries = async (req, res) => {
   }
 };
 
-const getGalleryByProductId = async (req, res) => {
+exports.getGalleryByProductId = async (req, res) => {
   try {
     const { productId } = req.params;
 
@@ -69,7 +69,7 @@ const getGalleryByProductId = async (req, res) => {
   }
 };
 
-const deleteGalleryByProductId = async (req, res) => {
+exports.deleteGalleryByProductId = async (req, res) => {
   try {
     const { productId } = req.params;
 
@@ -108,8 +108,3 @@ const deleteGalleryByProductId = async (req, res) => {
   }
 };
 
-module.exports = {
-  getAllGalleries,
-  getGalleryByProductId,
-  deleteGalleryByProductId, 
-};

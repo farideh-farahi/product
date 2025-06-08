@@ -1,6 +1,6 @@
 const { FileImage , Product} = require("../models"); 
 
-const getProductCover = async (req, res) => {
+exports.getProductCover = async (req, res) => {
     try {
         const { productId } = req.params;
 
@@ -26,8 +26,3 @@ const getProductCover = async (req, res) => {
         return res.status(500).json({ success: false, msg: "Server error while fetching cover image", error: error.message });
     }
 };
-
-
-module.exports ={
-  getProductCover
-}

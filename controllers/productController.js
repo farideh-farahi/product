@@ -1,6 +1,6 @@
 const { Product, Brand, Category, Subcategory, FileImage , Gallery} = require("../models");
-
-const createProduct = async (req, res) => {
+const {Op} = require ("sequelize")
+exports.createProduct = async (req, res) => {
   try {
     const { name, brandId, price, cover, galleryIds, categoryId, subcategoryIds, status, inventory } = req.body;
 
@@ -78,30 +78,81 @@ const createProduct = async (req, res) => {
   }
 };
 
-
-const getAllProducts = async (req, res) => {
+exports.getAllProducts = async (req, res) => {
   try {
-    const { isCat, isSub } = req.query;
-    const includeOptions = [
-      { model: Brand, attributes: ["id", "name"] },
-      { model: FileImage, attributes: ["id", "outputPath"], as: "CoverImage" }, 
-      { model: Gallery, attributes: ["id", "fileImageId"], as: "Galleries",
-        include: [{ model: FileImage, attributes: ["id", "outputPath"] }]
+    const { 
+      isCat, 
+      isSub,
+      isGallery,
+      isCover,
+      limit = 20,
+      page = 1,
+      minPrice = 0,
+      maxPrice = 999999, 
+      search,
+      order = "id",
+      orderDir = "DESC"
+    } = req.query;
 
-      }
-    ];
+    const includeOptions = [{ model: Brand, attributes: ["id", "name"] }];
 
     if (isCat === "true") {
       includeOptions.push({ model: Category, attributes: ["id", "name"] });
     }
     if (isSub === "true") {
-      includeOptions.push({ model: Subcategory, attributes: ["id", "name"],through: { attributes: [] } });
+      includeOptions.push({ model: Subcategory, attributes: ["id", "name"], through: { attributes: [] } });
     }
 
+    if (isGallery === "true") {
+      includeOptions.push({
+        model: Gallery,
+        attributes: ["id", "fileImageId"],
+        as: "Galleries",
+        include: [{ model: FileImage, attributes: ["id", "outputPath"] }]
+      });
+    }
+    if (isCover === "true") {
+      includeOptions.push({ model: FileImage, attributes: ["id", "outputPath"], as: "CoverImage" });
+    }
+
+    const limitValue = Number.isInteger(parseInt(limit, 10)) && parseInt(limit, 10) > 0 ? parseInt(limit, 10) : 20;
+    const pageValue = Number.isInteger(parseInt(page, 10)) && parseInt(page, 10) > 0 ? parseInt(page, 10) : 1;
+    const offsetValue = (pageValue - 1) * limitValue;
+
+    // Handle invalid sorting fields
+    const allowedOrders = ["id", "name", "price", "inventory"];
+    const orderByField = allowedOrders.includes(order) ? order : "id";
+
+    // Validate search query
+    const searchFilter = search && typeof search === "string" && search.trim().length > 0 
+      ? { [Op.or]: [
+          { name: { [Op.iLike]: `%${search}%` } },
+          { "$Brand.name$": { [Op.iLike]: `%${search}%` } }
+        ]}
+      : undefined;
+
+    // Error handling for bad inputs
+    if (limitValue < 1 || pageValue < 1) {
+      return res.status(400).json({ success: false, msg: "Invalid pagination parameters" });
+    }
+    if (!allowedOrders.includes(order)) {
+      return res.status(400).json({ success: false, msg: `Invalid order field: ${order}. Allowed values are ${allowedOrders.join(", ")}` });
+    }
+
+    // Execute query with validated inputs
     const products = await Product.findAll({
-      where: { status: 1 },
+      where: {
+        [Op.and]: [
+          { status: 1 },
+          { price: { [Op.between]: [minPrice, maxPrice] } },
+          searchFilter
+        ]
+      },
       attributes: ["id", "name", "price", "cover", "categoryId", "status", "inventory"],
-      include: includeOptions
+      include: includeOptions,
+      limit: limitValue,
+      offset: offsetValue,
+      order: [[orderByField, orderDir]]
     });
 
     return res.status(200).json({ success: true, products });
@@ -111,7 +162,8 @@ const getAllProducts = async (req, res) => {
   }
 };
 
-const getProductById = async (req, res) => {
+
+exports.getProductById = async (req, res) => {
   const { productId } = req.params;
 
   try {
@@ -144,8 +196,7 @@ const getProductById = async (req, res) => {
   }
 };
 
-
-const updateProduct = async (req, res) => {
+exports.updateProduct = async (req, res) => {
   const { id } = req.params;
   const { name, brandId, price, categoryId, subcategoryIds, status, cover, galleryIds, inventory } = req.body;
 
@@ -213,8 +264,7 @@ const updateProduct = async (req, res) => {
   }
 };
 
-
-const deleteProduct = async (req, res) => {
+exports.deleteProduct = async (req, res) => {
     const { id } = req.params;
 
     try {
@@ -230,10 +280,4 @@ const deleteProduct = async (req, res) => {
     }
 };
 
-module.exports = {
-    createProduct,
-    getAllProducts,
-    getProductById,
-    updateProduct,
-    deleteProduct,
-};
+

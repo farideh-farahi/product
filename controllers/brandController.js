@@ -1,6 +1,6 @@
 const { Brand } = require("../models")
 
-const createBrand = async (req, res) => {
+exports.createBrand = async (req, res) => {
     const { name } = req.body
     if(!name){
         return res.status(400).json({ success: false, msg: "Invalid or missing required fields!" });
@@ -18,7 +18,7 @@ const createBrand = async (req, res) => {
     }
 }
 
-const getAllBrands = async (req, res) => {
+exports.getAllBrands = async (req, res) => {
     try {
         const brands = await Brand.findAll({});
 
@@ -32,7 +32,7 @@ const getAllBrands = async (req, res) => {
     }
 };
 
-const updateBrand = async (req, res) => {
+exports.updateBrand = async (req, res) => {
     const brand_id = req.params.id;
     const { name } = req.body;
   
@@ -52,7 +52,7 @@ const updateBrand = async (req, res) => {
     }
   };
 
-  const deleteBrand = async (req, res) => {
+exports.deleteBrand = async (req, res) => {
     const brand_id = req.params.id;
  
     try{
@@ -67,9 +67,3 @@ const updateBrand = async (req, res) => {
       return res.status(500).json({ success: false, msg: "Server error while deleting brand", error: err.message });
     }
  }
-
-module.exports = {
-  createBrand, 
-  getAllBrands, 
-  updateBrand, 
-  deleteBrand}

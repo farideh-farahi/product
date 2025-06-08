@@ -1,6 +1,6 @@
 const {Category, Subcategory, sequelize} = require("../models")
 
-const createCategory = async (req, res) => {
+exports.createCategory = async (req, res) => {
     const {name, description, is_active} = req.body
     if(!name || !description || typeof is_active !== "boolean"){
         return res.status(400).json({ success: false, msg: "Invalid or missing required fields!" });
@@ -18,7 +18,7 @@ const createCategory = async (req, res) => {
     }
 }
 
-const getAllCategories = async (req, res) => {
+exports.getAllCategories = async (req, res) => {
     try {
         const categories = await Category.findAll({
             where: { is_active: true },
@@ -47,7 +47,7 @@ const getAllCategories = async (req, res) => {
     }
 };
 
-const updateCategory = async (req, res) => {
+exports.updateCategory = async (req, res) => {
     const { name, description, is_active } = req.body;
   
     if(!name || !description || typeof is_active !== "boolean"){
@@ -68,7 +68,7 @@ const updateCategory = async (req, res) => {
     }
   };
 
-const deleteCategory = async (req, res) => {
+exports.deleteCategory = async (req, res) => {
     const category_id = req.params.id;
  
     try{
@@ -85,7 +85,7 @@ const deleteCategory = async (req, res) => {
     }
  };
 
-const getCategoryMenu = async (req, res) => {
+exports.getCategoryMenu = async (req, res) => {
     try {
         const categories = await Category.findAll({
             where: { is_active: true },
@@ -121,13 +121,3 @@ const getCategoryMenu = async (req, res) => {
     }
 };
 
-
-
-
-module.exports = {
-    createCategory, 
-    getAllCategories, 
-    updateCategory, 
-    deleteCategory,
-    getCategoryMenu
-}

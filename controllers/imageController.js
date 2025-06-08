@@ -3,7 +3,7 @@ const fs = require ("fs")
 const sharp = require ("sharp")
 const path = require ("path")
 
-const uploadImage = async (req, res) => {
+exports.uploadImage = async (req, res) => {
   try {
     const userId = req.user?.user_id;
     const files = req.files;
@@ -67,9 +67,7 @@ const uploadImage = async (req, res) => {
   }
 };
 
-
-
-const getAllPhotos = async (req, res) => {
+exports.getAllPhotos = async (req, res) => {
     try {
         const photos = await FileImage.findAll({
             attributes: ["id", "outputPath"],
@@ -100,7 +98,7 @@ const getAllPhotos = async (req, res) => {
 };
 
 
-const getImageById = async (req, res) => {
+exports.getImageById = async (req, res) => {
     try {
         const { imageId } = req.params;
 
@@ -126,7 +124,7 @@ const getImageById = async (req, res) => {
     }
 };
 
-const getImageByUserId = async (req, res) => {
+exports.getImageByUserId = async (req, res) => {
     try {
         const { userId } = req.params;
 
@@ -150,7 +148,7 @@ const getImageByUserId = async (req, res) => {
     }
 };
 
-const replaceImage = async (req, res) => {
+exports.replaceImage = async (req, res) => {
     try{
     const { fileImageId } = req.params
 
@@ -188,7 +186,7 @@ const replaceImage = async (req, res) => {
     }
 };
 
-const deleteImage = async (req, res) => {
+exports.deleteImage = async (req, res) => {
     try {
         const { fileImageId } = req.params;
 
@@ -216,13 +214,3 @@ const deleteImage = async (req, res) => {
             error: err.message });
     }
 };
-
-
-module.exports = {
-    uploadImage,
-    getAllPhotos,
-    getImageById,
-    getImageByUserId,
-    replaceImage,
-    deleteImage
-}
