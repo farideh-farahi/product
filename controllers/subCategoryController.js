@@ -1,4 +1,3 @@
-const { where } = require("sequelize");
 const { Subcategory, Category } = require("../models");
 
 exports.createSubcategory = async (req, res) => {

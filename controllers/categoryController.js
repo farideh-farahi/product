@@ -102,7 +102,6 @@ exports.getCategoryMenu = async (req, res) => {
             return res.status(200).json({ success: true, msg: "No categories found" });
         }
 
-        // ✅ Formatting the response to group subcategories under each category
         const formattedMenu = categories.map(category => ({
             id: category.id,
             name: category.name,
