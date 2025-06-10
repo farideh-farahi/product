@@ -7,10 +7,8 @@ const {
   } = require("../controllers/galleryController");
 const validateToken = require("../middlewares/tokenValidation");
 
-const cacheMiddlewares = require("../middlewares/cacheMiddlewares")
 
-
-router.get('/all',validateToken,cacheMiddlewares, getAllGalleries);
+router.get('/all',validateToken, getAllGalleries);
 router.get('/:productId',validateToken, getGalleryByProductId);
 router.delete('/:productId', validateToken, deleteGalleryByProductId);
 
